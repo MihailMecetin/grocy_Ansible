@@ -1,0 +1,17 @@
+
+- name: import grocy vault
+  include_vars: "passwords.yml"
+  no_log: true
+
+- name: copy grocy admin password
+  template:
+    src: sqlite_password.sql.j2
+    dest: /var/www/html/grocy/data/sqlite_password.sql
+    owner: www-data
+    group: www-data
+  register: updated_sqlite
+
+- name: update grocy admin password
+  shell: "sqlite3 < /var/www/html/grocy/data/sqlite_password.sql"
+  notify: restart apache
+  when: updated_sqlite.changed

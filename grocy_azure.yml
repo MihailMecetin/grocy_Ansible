@@ -1,0 +1,8 @@
+---
+  - hosts: grocyVM
+    become: true
+    gather_facts: yes
+    roles: 
+      - grocy
+    vars:
+      ansible_user: azureuser

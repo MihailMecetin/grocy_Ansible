@@ -1,0 +1,101 @@
+---
+- name: install packages
+  apt:
+    pkg: "{{ packages }}"
+    state: present
+
+- name: setup php package
+  apt_repository:
+    repo: ppa:ondrej/php
+    state: present
+    update_cache: yes
+
+- name: install php packages
+  apt:
+    pkg: "{{ php_packages }}"
+    update_cache: yes
+    state: present
+
+- name: Create grocy dir
+  file:
+    path: /opt/grocy
+    state: directory
+    mode: '0755'
+
+- name: Create grocy apache dir
+  file:
+    path: /var/www/html/grocy
+    state: directory
+    mode: '0755'
+
+- name: Download Grocy
+  get_url:
+    url: https://releases.grocy.info/latest
+    dest: /opt/grocy/grocy.zip
+
+- name: Unzip Grocy
+  unarchive:
+    src: /opt/grocy/grocy.zip
+    dest: /var/www/html/grocy/
+    remote_src: yes
+    keep_newer: yes
+    creates: /var/www/html/grocy/app.php
+
+#- name: Update Grocy default template config
+
+- name: Copy Grocy config from default template
+  copy: 
+    src: /var/www/html/grocy/config-dist.php
+    dest: /var/www/html/grocy/data/config.php
+    remote_src: yes
+    force: no # Don't update if file exists
+  notify: restart apache
+
+- name: chown grocy dir to apache user
+  file:
+    path: /var/www/html/grocy
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
+  notify: restart apache
+
+- name: change grocy config format to unix
+  shell: dos2unix /var/www/html/grocy/data/config.php
+
+# Change Apache base path to /grocy/public
+- name: Change Apache base path
+  lineinfile:
+    path: /etc/apache2/sites-available/000-default.conf
+    regexp: '(DocumentRoot \/var\/www\/html)\n'
+    line: "\tDocumentRoot /var/www/html/grocy/public"
+    state: present
+    #backup: yes
+  notify: restart apache
+
+# change apache config: from None to -> AllowOverride: All
+- name: Update Apache AllowOverride
+  replace:
+    path: /etc/apache2/apache2.conf
+    regexp: '^<Directory \/var\/www\/>[\s\S]*^<\/Directory>$'
+    replace: |-
+      <Directory /var/www/>
+      	Options Indexes FollowSymLinks
+      	AllowOverride All
+      	Require all granted
+      </Directory>
+    #backup: yes
+  notify: restart apache
+
+- name: enabled mod_rewrite
+  apache2_module: name=rewrite state=present
+  notify: restart apache
+
+- name: update grocy config
+  include_tasks: config.yml 
+
+- name: start apache2
+  service:
+    name: apache2
+    state: started 
+    enabled: yes

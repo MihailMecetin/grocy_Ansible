@@ -1,0 +1,21 @@
+---
+# Updating the grocy config.php file
+
+- name: update grocy config
+  lineinfile:
+    dest: /var/www/html/grocy/data/config.php
+    backup: yes
+    backrefs: yes
+    regexp: "^(.*)Setting.'{{ item.key }}'"
+    line: \g<1>Setting('{{ item.key }}', '{{ item.value }}');
+  with_dict:
+    - 'DEFAULT_LOCALE': 'en'
+    - 'CURRENCY': 'EUR'
+    - 'CALENDAR_FIRST_DAY_OF_WEEK': '1'
+    - 'show_clock_in_header': 'true'
+    - 'night_mode_enabled': 'true'
+    - 'FEATURE_FLAG_CHORES': 'false'
+    - 'FEATURE_FLAG_TASKS': 'false'
+    - 'FEATURE_FLAG_BATTERIES': 'false'
+    - 'FEATURE_FLAG_EQUIPMENT': 'false'
+  notify: restart apache

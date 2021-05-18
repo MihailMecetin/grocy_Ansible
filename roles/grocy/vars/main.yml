@@ -1,0 +1,14 @@
+packages:
+  - dos2unix
+  - unzip
+  - tar
+  - software-properties-common
+  - apache2
+  - sqlite3
+  - apt-transport-https 
+  - lsb-release
+  - ca-certificates
+php_packages:
+  - php7.4 
+  - php7.4-sqlite3
+  - php7.4-gd
